@@ -2,12 +2,14 @@
 #include <WiFi.h>
 #include <Arduino.h>
 
+#define testPayload "{'id':'FF:FF:FF:FF:FF','dataSpec':{'lastTime':1606914671,'interval':10,'total':6},'data':{'pipeTemp1':[50.1,51.2,52.3,53.4,54.5],'pipeTemp2':[50.1,51.2,52.3,53.4,54.5]}}"
+#define length_testPayload 169
+
 uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}; //REVIEW, this is a broadcast address
 
 typedef struct struct_message
 {
-  int temperature1;
-  int temperature2;
+  char sendMessage[length_testPayload + 1];
 } struct_message;
 
 struct_message myData;
@@ -18,14 +20,25 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status)
   Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
 }
 
-#define timeMeasurePin 2
+#define timeMeasurePin 14
+
+char testMessage[] = testPayload;
 
 void setup()
 {
   pinMode(timeMeasurePin, OUTPUT);
 
   Serial.begin(115200);
-  Serial.println("active");
+  Serial.println("Device has started");
+
+  Serial.print("Testmessage: ");
+  Serial.println(testMessage);
+  Serial.print("has lenght: ");
+  Serial.println(strlen(testMessage));
+
+  strcpy(myData.sendMessage, testMessage);
+  Serial.print("myData.sendMessage: ");
+  Serial.println(myData.sendMessage);
 
   WiFi.mode(WIFI_STA);
 
@@ -53,27 +66,7 @@ void setup()
 
 void loop()
 {
-// Set values to send
-#define maximumValueSendTest 32000
-#define minimumValueSendTest 1
-  //myData.id = 1;
-  //Serial.println("start");
-  if (myData.temperature1 < maximumValueSendTest)
-  {
-    myData.temperature1++;
-  }
-  else
-  {
-    myData.temperature1 = minimumValueSendTest;
-  }
-  if (myData.temperature2 > minimumValueSendTest)
-  {
-    myData.temperature2--;
-  }
-  else
-  {
-    myData.temperature2 = maximumValueSendTest;
-  }
+  // Set values to send
 
   digitalWrite(timeMeasurePin, HIGH); //for time logging with scope
   esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *)&myData, sizeof(myData));
@@ -87,5 +80,5 @@ void loop()
   {
     Serial.println("Error sending the data");
   }
-  delay(100);
+  delay(10000);
 }
